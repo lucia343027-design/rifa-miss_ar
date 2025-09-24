@@ -29,7 +29,6 @@ h1{margin:0;font-size:20px;}
 .field{flex:1;min-width:210px;display:flex;flex-direction:column;margin-bottom:10px;}
 label{font-size:13px;margin-bottom:6px;color:#444}
 input[type="text"], input[type="tel"], input[type="file"], textarea, select {padding:10px;border-radius:8px;border:1px solid #eee;font-size:14px}
-.input-inline{display:flex;gap:8px;align-items:center}
 .btn{display:inline-block;padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:white;border:none;cursor:pointer;font-weight:600;}
 .btn.secondary{background:white;color:var(--accent1);border:1px solid #eee;}
 .note{font-size:13px;color:#666;margin-top:8px}
@@ -52,9 +51,7 @@ input[type="text"], input[type="tel"], input[type="file"], textarea, select {pad
 
   <div class="note">Elige un número disponible (1-100). Si ya está en gris, significa que alguien ya lo reservó.</div>
 
-  <div id="numbers" class="grid" aria-label="Listado de números">
-    <!-- JS genera los 100 -->
-  </div>
+  <div id="numbers" class="grid" aria-label="Listado de números"></div>
 
   <div class="form">
     <div id="message" class="msg"></div>
@@ -97,7 +94,7 @@ input[type="text"], input[type="tel"], input[type="file"], textarea, select {pad
 </div>
 
 <script>
-// CONFIG: reemplazá por la URL de tu Web App de Google Apps Script (ver instrucciones).
+// URL del Web App de Google Apps Script
 const API_URL = "https://script.google.com/macros/s/AKfycbyBtQrGkv-0rbhydZJLcowukDbR8oCA5pXJeKCCCx5jOuAmy-43BuBgdMyTkyLssPfU/exec";
 
 let reservedSet = new Set();
@@ -128,6 +125,7 @@ function createGrid() {
     btn.addEventListener('click', () => selectNumber(i));
     numbersEl.appendChild(btn);
   }
+  updateButtons(); // 🔹 importante: marcar estado inicial
 }
 
 function updateButtons() {
@@ -167,7 +165,6 @@ async function fetchReserved() {
     if (!resp.ok) throw new Error('No se pudo obtener números reservados');
     const data = await resp.json();
     reservedSet = new Set((data.reserved || []).map(String));
-    // if selected number was taken meanwhile, clear it
     if (selectedNumber && reservedSet.has(String(selectedNumber))) {
       selectedNumber = null;
       numeroInput.value = '';
@@ -195,7 +192,7 @@ form.addEventListener('submit', async function(e){
     showMessage('Completá todos los campos y subí la captura.', 'error'); return;
   }
   const file = fileInput.files[0];
-  if (file.size > 8 * 1024 * 1024) { showMessage('El archivo supera 8MB. Comprimilo o envianos por otra vía.', 'error'); return; }
+  if (file.size > 8 * 1024 * 1024) { showMessage('El archivo supera 8MB.', 'error'); return; }
 
   submitBtn.disabled = true;
   submitBtn.textContent = 'Enviando...';
@@ -216,7 +213,7 @@ form.addEventListener('submit', async function(e){
     });
     const result = await res.json();
     if (result.success) {
-      showMessage('¡Reservado correctamente! Muchas gracias por tu aporte.', 'success');
+      showMessage('¡Reservado correctamente! Muchas gracias 💜', 'success');
       reservedSet.add(String(numeroInput.value));
       selectedNumber = null;
       numeroInput.value = '';
@@ -224,7 +221,6 @@ form.addEventListener('submit', async function(e){
       updateButtons();
     } else {
       showMessage(result.message || 'Error en la reserva. Probá otra vez.', 'error');
-      // reload reserved in case of race condition
       await fetchReserved();
     }
   } catch (err) {
@@ -259,7 +255,6 @@ function fileToBase64(file) {
 // inicial
 createGrid();
 fetchReserved();
-// refrescar cada 10s
 setInterval(fetchReserved, 10000);
 </script>
 </body>
