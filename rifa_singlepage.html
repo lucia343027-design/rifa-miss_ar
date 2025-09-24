@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rifa Solidaria - Miss & Teen La Rioja</title>
+<style>
+:root {
+  --bg: #faf7fc;
+  --card: #ffffff;
+  --accent1: #9b6fb2;
+  --accent2: #e9cfe9;
+  --muted: #9b9b9b;
+  --success: #2a9d8f;
+}
+body { font-family: Inter, system-ui, sans-serif; margin:0; background:linear-gradient(180deg,var(--bg),#fff); color:#222;}
+.container {max-width:980px;margin:24px auto;padding:20px;}
+.header {display:flex;gap:12px;align-items:center;}
+.logo {width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;}
+h1{margin:0;font-size:20px;}
+.description {margin-top:8px;color:#444;font-size:14px}
+.grid {margin-top:18px; display:grid;grid-template-columns:repeat(auto-fit,minmax(56px,1fr));gap:8px;}
+.number {background:white;border:1px solid #eee;padding:10px;border-radius:8px;text-align:center;cursor:pointer;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,0.03);}
+.number.available:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(155,111,178,0.12);}
+.number.taken{background:#f1f1f1;color:#aaa;cursor:not-allowed;text-decoration:line-through;}
+.number.selected{background:linear-gradient(135deg,var(--accent1),var(--accent2));color:white;font-weight:600;box-shadow:0 6px 18px rgba(155,111,178,0.18);}
+.form {margin-top:22px;background:var(--card);padding:16px;border-radius:12px;border:1px solid #f0eaf7;}
+.row{display:flex;gap:8px;flex-wrap:wrap;}
+.field{flex:1;min-width:210px;display:flex;flex-direction:column;margin-bottom:10px;}
+label{font-size:13px;margin-bottom:6px;color:#444}
+input[type="text"], input[type="tel"], input[type="file"], textarea, select {padding:10px;border-radius:8px;border:1px solid #eee;font-size:14px}
+.input-inline{display:flex;gap:8px;align-items:center}
+.btn{display:inline-block;padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:white;border:none;cursor:pointer;font-weight:600;}
+.btn.secondary{background:white;color:var(--accent1);border:1px solid #eee;}
+.note{font-size:13px;color:#666;margin-top:8px}
+.footer{margin-top:18px;font-size:13px;color:#666}
+.msg{padding:8px;border-radius:8px;margin-bottom:10px;display:none}
+.msg.success{background:#e6fbf7;color:var(--success)}
+.msg.error{background:#fff0f0;color:#c0392b}
+@media (max-width:520px){ .header{flex-direction:column;align-items:flex-start} }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">🎟️</div>
+    <div>
+      <h1>Gran Rifa Solidaria – Miss & Teen Argentina 2025</h1>
+      <div class="description">Recaudamos fondos para viajar en <strong>noviembre</strong> a Buenos Aires y representar a La Rioja. Valor por número: <strong>$3.000</strong>. Sorteo: <strong>07/10</strong>.</div>
+    </div>
+  </div>
+
+  <div class="note">Elige un número disponible (1-100). Si ya está en gris, significa que alguien ya lo reservó.</div>
+
+  <div id="numbers" class="grid" aria-label="Listado de números">
+    <!-- JS genera los 100 -->
+  </div>
+
+  <div class="form">
+    <div id="message" class="msg"></div>
+    <form id="rifaForm">
+      <div class="row">
+        <div class="field">
+          <label for="numero">Número elegido</label>
+          <input id="numero" name="numero" type="text" readonly placeholder="Seleccioná un número del panel" required>
+        </div>
+        <div class="field">
+          <label for="name">Nombre completo y apellido</label>
+          <input id="name" name="name" type="text" placeholder="Ej: María Pérez" required>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="dni">DNI</label>
+          <input id="dni" name="dni" type="text" placeholder="Ej: 27.123.456" required>
+        </div>
+        <div class="field">
+          <label for="phone">Teléfono</label>
+          <input id="phone" name="phone" type="tel" placeholder="Ej: 38xxxxxxx" required>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1 1 100%;">
+          <label for="transfer">Subí la captura de la transferencia (máx 8 MB)</label>
+          <input id="transfer" name="transfer" type="file" accept="image/*,application/pdf" required>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+        <button id="submitBtn" class="btn" type="submit">Reservar número</button>
+        <button id="clearBtn" type="button" class="btn secondary">Limpiar selección</button>
+      </div>
+      <div class="note">Si al enviar aparece “Número ya reservado”, volvé a elegir otro número. La reserva se confirma cuando la respuesta indica "Reservado correctamente".</div>
+    </form>
+  </div>
+
+  <div class="footer">Preguntas: contactanos por DM. Esta página guarda la info en una hoja de cálculo protegida para la organización.</div>
+</div>
+
+<script>
+// CONFIG: reemplazá por la URL de tu Web App de Google Apps Script (ver instrucciones).
+const API_URL = "https://script.google.com/macros/s/AKfycbyBtQrGkv-0rbhydZJLcowukDbR8oCA5pXJeKCCCx5jOuAmy-43BuBgdMyTkyLssPfU/execOOGLE_SCRIPT_WEB_APP_URL_HERE";
+
+let reservedSet = new Set();
+let selectedNumber = null;
+
+const numbersEl = document.getElementById('numbers');
+const numeroInput = document.getElementById('numero');
+const messageEl = document.getElementById('message');
+const form = document.getElementById('rifaForm');
+const submitBtn = document.getElementById('submitBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+function showMessage(text, type='success') {
+  messageEl.style.display = 'block';
+  messageEl.textContent = text;
+  messageEl.className = 'msg ' + (type === 'success' ? 'success' : 'error');
+  setTimeout(()=> { messageEl.style.display = 'none'; }, 7000);
+}
+
+function createGrid() {
+  numbersEl.innerHTML = '';
+  for (let i=1;i<=100;i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'number available';
+    btn.textContent = i;
+    btn.dataset.num = i;
+    btn.addEventListener('click', () => selectNumber(i));
+    numbersEl.appendChild(btn);
+  }
+}
+
+function updateButtons() {
+  const btns = numbersEl.querySelectorAll('.number');
+  btns.forEach(btn => {
+    const n = btn.dataset.num;
+    if (reservedSet.has(n)) {
+      btn.classList.add('taken');
+      btn.classList.remove('available','selected');
+      btn.disabled = true;
+    } else {
+      btn.classList.remove('taken');
+      btn.classList.add('available');
+      btn.disabled = false;
+    }
+    if (selectedNumber && (n == selectedNumber)) {
+      btn.classList.add('selected');
+      btn.classList.remove('available');
+    }
+  });
+}
+
+function selectNumber(n) {
+  n = String(n);
+  if (reservedSet.has(n)) {
+    showMessage('El número ya fue reservado.', 'error');
+    return;
+  }
+  selectedNumber = n;
+  numeroInput.value = n;
+  updateButtons();
+}
+
+async function fetchReserved() {
+  try {
+    const resp = await fetch(API_URL);
+    if (!resp.ok) throw new Error('No se pudo obtener números reservados');
+    const data = await resp.json();
+    reservedSet = new Set((data.reserved || []).map(String));
+    // if selected number was taken meanwhile, clear it
+    if (selectedNumber && reservedSet.has(String(selectedNumber))) {
+      selectedNumber = null;
+      numeroInput.value = '';
+      showMessage('El número que habías seleccionado fue reservado por otra persona.', 'error');
+    }
+    updateButtons();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+form.addEventListener('submit', async function(e){
+  e.preventDefault();
+  if (!numeroInput.value) {
+    showMessage('Por favor seleccioná un número antes de enviar.', 'error'); return;
+  }
+  if (reservedSet.has(String(numeroInput.value))) {
+    showMessage('Ese número ya fue reservado. Elegí otro.', 'error'); return;
+  }
+  const name = document.getElementById('name').value.trim();
+  const dni = document.getElementById('dni').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const fileInput = document.getElementById('transfer');
+  if (!name || !dni || !phone || !fileInput.files.length) {
+    showMessage('Completá todos los campos y subí la captura.', 'error'); return;
+  }
+  const file = fileInput.files[0];
+  if (file.size > 8 * 1024 * 1024) { showMessage('El archivo supera 8MB. Comprimilo o envianos por otra vía.', 'error'); return; }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enviando...';
+
+  try {
+    const fileBase64 = await fileToBase64(file);
+    const payload = {
+      numero: String(numeroInput.value),
+      name, dni, phone,
+      fileName: file.name,
+      fileType: file.type || 'image/jpeg',
+      fileBase64
+    };
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (result.success) {
+      showMessage('¡Reservado correctamente! Muchas gracias por tu aporte.', 'success');
+      reservedSet.add(String(numeroInput.value));
+      selectedNumber = null;
+      numeroInput.value = '';
+      form.reset();
+      updateButtons();
+    } else {
+      showMessage(result.message || 'Error en la reserva. Probá otra vez.', 'error');
+      // reload reserved in case of race condition
+      await fetchReserved();
+    }
+  } catch (err) {
+    console.error(err);
+    showMessage('Error al conectar con el servidor. Verificá la URL del web app.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Reservar número';
+  }
+});
+
+clearBtn.addEventListener('click', function(){
+  selectedNumber = null;
+  numeroInput.value = '';
+  form.reset();
+  updateButtons();
+});
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => { reader.abort(); reject(new Error('Error leyendo archivo')); };
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      resolve(base64);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// inicial
+createGrid();
+fetchReserved();
+// refrescar cada 10s
+setInterval(fetchReserved, 10000);
+</script>
+</body>
+</html>
